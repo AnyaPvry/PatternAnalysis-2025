@@ -107,3 +107,24 @@ plt.grid(True)
 plt.show()
 
 
+
+
+# Testing evaluation with validation dataset
+# Quick test evaluation
+trainer.args.predict_with_generate = True  # enable generation for evaluation
+val_metrics = trainer.evaluate(tokenized_val, metric_key_prefix="valuation")
+print("Valuation metrics:", val_metrics)
+
+# 10. Generate one example 
+def generate_lay_summary(radiology_report):
+    val = PREFIX + radiology_report
+    inputs = tokenizer(val, return_tensors="pt").to(model.device)
+    outputs = model.generate(**inputs, num_beams=2, max_new_tokens=128)
+    return tokenizer.decode(outputs[0], skip_special_tokens=True)
+
+sample = small_val[0]
+print("\n--- Example Generation ---")
+print("Report:\n", sample["radiology_report"][:300], "...\n")
+print("Gold summary:\n", sample["layman_report"], "\n")
+print("Model summary:\n", generate_lay_summary(sample["radiology_report"]))
+
