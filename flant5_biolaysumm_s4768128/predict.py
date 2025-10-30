@@ -35,3 +35,21 @@ pred_trainer = Seq2SeqTrainer(
     args=gen_args,
     processing_class=tokenizer,
 )
+
+
+
+
+pred_output = pred_trainer.predict(tokenized_test)
+
+# gives token IDs for generated sequences
+pred_ids = pred_output.predictions
+
+# decode to text
+decoded_preds = tokenizer.batch_decode(pred_ids, skip_special_tokens=True)
+
+subset_test = subset_test.add_column("generated_summary", decoded_preds)
+
+for i in range(5):
+    print("\n--- Example", i, "---")
+    print("INPUT:", subset_test[i]["radiology_report"][:250], "...")
+    print("OUTPUT:", subset_test[i]["generated_summary"])
