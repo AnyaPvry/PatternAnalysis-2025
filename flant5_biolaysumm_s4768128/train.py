@@ -87,3 +87,23 @@ tokenizer.save_pretrained(SAVED_PATH)
 
 print(f"Final model and tokenizer saved locally to: {SAVED_PATH}")
 
+
+# Training Loss Curve
+import matplotlib.pyplot as plt
+
+# Extract loss values from training logs
+logs = trainer.state.log_history
+train_steps = [entry["step"] for entry in logs if "loss" in entry]
+train_loss = [entry["loss"] for entry in logs if "loss" in entry]
+
+# Plot training loss curve
+plt.figure(figsize=(7,4))
+plt.plot(train_steps, train_loss, label="Training Loss")
+plt.xlabel("Training Step")
+plt.ylabel("Loss")
+plt.title("FLAN-T5 Training Loss Curve")
+plt.legend()
+plt.grid(True)
+plt.show()
+
+
