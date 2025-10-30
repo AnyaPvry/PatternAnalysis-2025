@@ -23,7 +23,7 @@ def load_clean_dataset():
         return len(src) > 0 and len(tgt) > 0
     return dataset.filter(clean_up)
 
-# 4. Tokenization + Preprocessing
+# 4. Preprocessing + Tokenization
 def preprocess_dataset(dataset, tokenizer, max_input_len=256, max_target_len=128):
     PREFIX = "Summarize this radiology report for a layperson: "
 
