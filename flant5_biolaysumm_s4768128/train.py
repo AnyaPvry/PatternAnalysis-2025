@@ -35,3 +35,28 @@ def compute_metrics(eval_preds):
         use_stemmer=True,
     )
     return result
+
+# Training arguments
+from transformers import Seq2SeqTrainingArguments, Seq2SeqTrainer
+
+training_args = Seq2SeqTrainingArguments(
+    output_dir="/content/drive/MyDrive/saved_models/",
+    eval_strategy="epoch",             # use new argument name
+    learning_rate=2e-4,             # smaller lr → more stable
+    per_device_train_batch_size=32,
+    per_device_eval_batch_size=32,   # 👈 add this
+    weight_decay=0.01,
+    num_train_epochs=3,
+    fp16=False,                     # absolutely disable mixed precision
+    bf16=False,                     # also disable bfloat16
+    logging_steps=10,
+    logging_first_step=True,
+    predict_with_generate=True,
+    report_to="none",
+    remove_unused_columns=False,
+    label_names=["labels"],         # tell trainer where to find labels
+    #max_grad_norm=1.0,              # clip gradients to avoid explosions
+)
+
+# Force model to FP32 just in case
+model = model.to("cuda").float()
