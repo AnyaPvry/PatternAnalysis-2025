@@ -60,3 +60,23 @@ training_args = Seq2SeqTrainingArguments(
 
 # Force model to FP32 just in case
 model = model.to("cuda").float()
+
+# 7. Trainer
+trainer = Seq2SeqTrainer(
+    model=model,
+    args=training_args,
+    train_dataset=tokenized_train,
+    eval_dataset=tokenized_val,
+    tokenizer=tokenizer,
+    data_collator=data_collator,
+    compute_metrics=compute_metrics,
+)
+
+print("Checking label lengths...")
+lengths = []
+for i in range(5):
+    ex = tokenized_train[i]
+    n_real_labels = sum(1 for t in ex["labels"] if t != tokenizer.pad_token_id)
+    lengths.append(n_real_labels)
+
+print(lengths)
