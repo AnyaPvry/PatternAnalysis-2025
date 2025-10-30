@@ -75,3 +75,15 @@ trainer = Seq2SeqTrainer(
 # Train
 trainer.train()
 print(trainer.state.log_history[-10:])
+
+# Save trained model locally
+import os
+
+SAVED_PATH = "./saved_models/final" 
+os.makedirs(SAVED_PATH, exist_ok=True)  # make sure folder exists
+
+trainer.save_model(SAVED_PATH)
+tokenizer.save_pretrained(SAVED_PATH)
+
+print(f"Final model and tokenizer saved locally to: {SAVED_PATH}")
+
