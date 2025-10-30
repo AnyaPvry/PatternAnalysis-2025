@@ -72,11 +72,6 @@ trainer = Seq2SeqTrainer(
     compute_metrics=compute_metrics,
 )
 
-print("Checking label lengths...")
-lengths = []
-for i in range(5):
-    ex = tokenized_train[i]
-    n_real_labels = sum(1 for t in ex["labels"] if t != tokenizer.pad_token_id)
-    lengths.append(n_real_labels)
-
-print(lengths)
+# Train
+trainer.train()
+print(trainer.state.log_history[-10:])
