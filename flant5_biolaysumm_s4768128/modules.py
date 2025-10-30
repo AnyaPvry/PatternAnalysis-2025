@@ -13,5 +13,5 @@ if __name__ == "__main__":
     tokenizer, model = load_model()
 
     dataset = load_clean_dataset()
-
+    tokenized_train, tokenized_val = preprocess_dataset(dataset, tokenizer)
 
