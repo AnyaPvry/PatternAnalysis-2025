@@ -38,6 +38,7 @@ pred_trainer = Seq2SeqTrainer(
 
 
 
+# Run trained model on test dataset and generate output
 
 pred_output = pred_trainer.predict(tokenized_test)
 

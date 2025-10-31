@@ -13,6 +13,27 @@ os.makedirs(SAVE_DIR, exist_ok=True)
 # from google.colab import drive
 # drive.mount('/content/drive')  # authorize access
 
+# LoRA 
+# pip install peft
+from peft import LoraConfig, get_peft_model
+
+lora_config = LoraConfig(
+ r=8,
+ lora_alpha=16,
+ target_modules=["q", "v"],
+ lora_dropout=0.05,
+ bias="none",
+ task_type="SEQ_2_SEQ_LM"
+)
+
+# Wrap model with LoRA adapters
+model = get_peft_model(model, lora_config)
+
+# Optional: check how many parameters are trainable
+model.print_trainable_parameters()
+
+
+
 # Metric
 metric = evaluate.load("rouge")
 
