@@ -4,11 +4,6 @@ import nltk
 import evaluate
 from transformers import Seq2SeqTrainingArguments, Seq2SeqTrainer
 
-# -- If saving model on local device --
-# 0. make sure the folder exists
-SAVE_DIR = "./saved_models/final"
-os.makedirs(SAVE_DIR, exist_ok=True)
-
 # -- If saving model on google drive, when working on google collab --
 # from google.colab import drive
 # drive.mount('/content/drive')  # authorize access

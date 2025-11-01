@@ -12,6 +12,6 @@ def load_model():
 if __name__ == "__main__":
     tokenizer, model = load_model()
 
-    dataset = load_clean_dataset()
-    tokenized_train, tokenized_val = preprocess_dataset(dataset, tokenizer)
+    subset_train, subset_val = clean_dataset()
+    tokenized_train, tokenized_val = preprocess_dataset(subset_train, subset_val, tokenizer)
 

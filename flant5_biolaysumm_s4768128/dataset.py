@@ -14,17 +14,23 @@ from transformers import (
 nltk.download("punkt", quiet=True)
 
 # 2. Load + clean dataset
-def load_clean_dataset():
+def clean_dataset():
     dataset = load_dataset("BioLaySumm/BioLaySumm2025-LaymanRRG-opensource-track")
 
     def clean_up(example):
         src = (example["radiology_report"] or "").strip()
         tgt = (example["layman_report"] or "").strip()
         return len(src) > 0 and len(tgt) > 0
-    return dataset.filter(clean_up)
+    
+    clean_dataset = dataset.filter(clean_up)
+    
+    subset_train = clean_dataset["train"].shuffle(seed=42).select(range(100000))
+    subset_val   = clean_dataset["validation"].select(range(8000))
+    
+    return subset_train, subset_val
 
 # 4. Preprocessing + Tokenization
-def preprocess_dataset(dataset, tokenizer, max_input_len=256, max_target_len=128):
+def preprocess_dataset(subset_train, subset_val, tokenizer, max_input_len=256, max_target_len=128):
     PREFIX = "Summarize this radiology report for a layperson: "
 
     def preprocess_function(batch):
@@ -48,14 +54,14 @@ def preprocess_dataset(dataset, tokenizer, max_input_len=256, max_target_len=128
 
     cols_to_keep = ["input_ids", "attention_mask", "labels"]
 
-    tokenized_train = dataset["train"].map(
+    tokenized_train = subset_train.map(
         preprocess_function,
         batched=True,
-        remove_columns=[c for c in dataset["train"].column_names if c not in cols_to_keep],
+        remove_columns=[c for c in subset_train.column_names if c not in cols_to_keep],
     )
-    tokenized_val = dataset["validation"].map(
+    tokenized_val = subset_val.map(
         preprocess_function,
         batched=True,
-        remove_columns=[c for c in dataset["validation"].column_names if c not in cols_to_keep],
+        remove_columns=[c for c in subset_val.column_names if c not in cols_to_keep],
     )
     return tokenized_train, tokenized_val
