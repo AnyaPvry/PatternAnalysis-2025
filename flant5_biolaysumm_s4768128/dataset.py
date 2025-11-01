@@ -9,14 +9,15 @@ from transformers import (
     Seq2SeqTrainingArguments,
     Seq2SeqTrainer,
 )
-
-# 1. Setup
 nltk.download("punkt", quiet=True)
 
-# 2. Load + clean dataset
+# 1. Data Loading and Preparation
+
 def clean_dataset():
+    # Load BioLaySumm dataset
     dataset = load_dataset("BioLaySumm/BioLaySumm2025-LaymanRRG-opensource-track")
 
+    # Dataset preparation clean up
     def clean_up(example):
         src = (example["radiology_report"] or "").strip()
         tgt = (example["layman_report"] or "").strip()
@@ -24,12 +25,13 @@ def clean_dataset():
     
     clean_dataset = dataset.filter(clean_up)
     
+    # Apply clean up on selected range of required datasets. 
     subset_train = clean_dataset["train"].shuffle(seed=42).select(range(100000))
     subset_val   = clean_dataset["validation"].select(range(8000))
     
     return subset_train, subset_val
 
-# 4. Preprocessing + Tokenization
+# 2. Data Formatting and Preprocessing
 def preprocess_dataset(subset_train, subset_val, tokenizer, max_input_len=256, max_target_len=128):
     PREFIX = "Summarize this radiology report for a layperson: "
 
