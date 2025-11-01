@@ -4,30 +4,9 @@ import nltk
 import evaluate
 from transformers import Seq2SeqTrainingArguments, Seq2SeqTrainer
 
-# -- If saving model on google drive, when working on google collab --
-# from google.colab import drive
-# drive.mount('/content/drive')  # authorize access
-
-# LoRA 
-# pip install peft
-from peft import LoraConfig, get_peft_model
-
-lora_config = LoraConfig(
- r=8,
- lora_alpha=16,
- target_modules=["q", "v"],
- lora_dropout=0.05,
- bias="none",
- task_type="SEQ_2_SEQ_LM"
-)
-
-# Wrap model with LoRA adapters
-model = get_peft_model(model, lora_config)
-
-# Optional: check how many parameters are trainable
-model.print_trainable_parameters()
-
-
+# Saving model on local device
+SAVE_DIR = "./saved_models/final"
+os.makedirs(SAVE_DIR, exist_ok=True)
 
 # Metric
 metric = evaluate.load("rouge")
@@ -35,7 +14,7 @@ metric = evaluate.load("rouge")
 def compute_metrics(eval_preds):
     preds, labels = eval_preds
 
-    # replace -100 with pad token so we can decode
+    # replace -100 with pad token for decoding
     labels = np.where(labels != -100, labels, tokenizer.pad_token_id)
 
     decoded_preds = tokenizer.batch_decode(preds, skip_special_tokens=True)

@@ -5,6 +5,7 @@ MODEL_NAME = "google/flan-t5-base"
 
 def load_model():
     """Load FLAN-T5 model and tokenizer"""
+    # 5. Initialize Model FLAN-T5-base
     tokenizer = T5Tokenizer.from_pretrained(MODEL_NAME)
     model = T5ForConditionalGeneration.from_pretrained(MODEL_NAME)
     return tokenizer, model
@@ -14,4 +15,6 @@ if __name__ == "__main__":
 
     subset_train, subset_val = clean_dataset()
     tokenized_train, tokenized_val = preprocess_dataset(subset_train, subset_val, tokenizer)
+    
+    
 

@@ -59,7 +59,8 @@ As such, a custom clean_up function is applied to only the train and validation 
 A subset of each datast is also chosen through selecting a fixed range; this is set for prototyping on a smaller instruction dataset, then scaling and readjustment with trial and error to find optimal dataset size. 
 Shuffling with fixed seed is also set for reproducability and ensures the training data is randomized in a consistent manner across runs, preventing any bias from the original dataset order while maintaining deterministic reproducibility.
 
-### 2. Data Formatting and Preprocessing (dataset.py)
+### 2. Data Formatting and Preprocessing (modules.py)
+Tokenizer is loaded in modules.py.
 
 The prepared data is passed through a tokenizer, with 
 the context window for maximum input length set at 256 since radiology reports are longer, and maximmum target length at a shorter 128 since layman summaries are shorter.
@@ -93,8 +94,7 @@ Without a data collator, this would have to be manually done through manual padd
 
 ### 4. Create Data Loader
 
-### 5. Initialize Model FLAN-T5-base (dataset.py)
-...
+### 5. Initialize Model FLAN-T5-base (modules.py)
 
 ### 6. Fine-tuning ()
 ...
@@ -108,24 +108,97 @@ This code runs after training to perform a quick qualitative evaluation on a val
 
 
 ---
-
 ## Results
 | Trial no. | Test | Validation | learning rate |
 | --- | --- | --- | -- |
 | Trial 1 | 2000 | 200 | 3e-4
 | Trial 2 | 2000 | 200 | 2e-4
-| Trial 2 | 20,000 | 2000 | 3e-4
+| Trial 3 | 20,000 | 2000 | 3e-4
+| Trial 4 | 20,000 | 2000 | 2e-4
 
-
-### Trial 2: Test 200,000, Validation 2000
-
+### Trial 1: Test 2000, Validation 200, Learning Rate 3e-4
 Table
 
 loss curve
 
+Valuation metrics: {'valuation_loss': 0.5616681575775146, 'valuation_rouge1': 0.4005814744200473, 'valuation_rouge2': 0.22337463515126288, 'valuation_rougeL': 0.34938132175511655, 'valuation_rougeLsum': 0.3699470848351884, 'valuation_runtime': 7.187, 'valuation_samples_per_second': 27.828, 'valuation_steps_per_second': 0.974, 'epoch': 3.0}
+
+In Training
+--- Example Generation ---
+Report:
+ The chest shows significant air trapping. Bilateral apical chronic changes are present. Dorsal kyphosis is noted. No evidence of pneumothorax. ...
+
+Ground Truth summary:
+ The chest shows a large amount of trapped air. There are long-term changes at the top of both lungs. The upper back is curved outward. There is no sign of air in the space around the lungs. 
+
+Model summary:
+ The chest shows significant air trapping. There are chronic changes in the apical apical changes. There is also a kyphosis in the lungs. There is no sign of pneumothorax.
+
+In Training
+--- Example Generation ---
+Report:
+ The chest shows significant air trapping. Bilateral apical chronic changes are present. Dorsal kyphosis is noted. No evidence of pneumothorax. ...
+
+Ground Truth summary:
+ The chest shows a large amount of trapped air. There are long-term changes at the top of both lungs. The upper back is curved outward. There is no sign of air in the space around the lungs. 
+
+Model summary:
+ The chest shows significant air trapping. There are chronic changes in the apical apical changes. There is also a kyphosis in the lungs. There is no sign of pneumothorax.
+
+### Trial 2: Test 2000, Validation 200, Learning Rate 2e-4
+In Training:
+table
+
+loss curve
+
+Valuation metrics: {'valuation_loss': 0.4926953911781311, 'valuation_rouge1': 0.43138340708215817, 'valuation_rouge2': 0.2595719856552169, 'valuation_rougeL': 0.3793345296400347, 'valuation_rougeLsum': 0.40013170566378886, 'valuation_runtime': 7.9915, 'valuation_samples_per_second': 25.026, 'valuation_steps_per_second': 0.876, 'epoch': 3.0}
+
+--- Example Generation ---
+Report:
+ The chest shows significant air trapping. Bilateral apical chronic changes are present. Dorsal kyphosis is noted. No evidence of pneumothorax. ...
+
+Ground Truth summary:
+ The chest shows a large amount of trapped air. There are long-term changes at the top of both lungs. The upper back is curved outward. There is no sign of air in the space around the lungs. 
+
+Model summary:
+ The chest shows significant air trapping. There are long-term changes in both apical apical areas. There is also a curvature of the spine. There is no sign of pneumonia in the lungs.
+
+In Testing:
+--- Example 1 ---
+INPUT: The chest shows significant air trapping. Bilateral apical chronic changes are present. Dorsal kyphosis is noted. No evidence of pneumothorax. ...
+GROUND TRUTH: The chest shows a large amount of trapped air. There are long-term changes at the top of both lungs. The upper back is curved outward. There is no sign of air in the space around the lungs.
+MODEL OUTPUT: The chest x-ray shows a lot of air is trapped in the lungs. There are long-term changes at the top of both lungs. The upper back is curved outward. There is no sign of air leakage outside the lungs.
+
+--- Example 2 ---
+INPUT: Central venous catheter traversing the left jugular vein with its tip in the superior vena cava. The remainder is unchanged. ...
+GROUND TRUTH: A central venous catheter is going through the left jugular vein and its tip is in the superior vena cava. Everything else is the same as before.
+MODEL OUTPUT: A central venous catheter is going through the left jugular vein and its tip is in the superior vena cava. Everything else looks the same as before.
+
+--- Example 3 ---
+INPUT: Chronic pulmonary changes ...
+GROUND TRUTH: Long-term changes in the lungs are seen.
+MODEL OUTPUT: Long-term changes in the lungs are seen.
+
+--- Example 4 ---
+INPUT: Radiological signs of air trapping, flattened diaphragm, and increased retrosternal space. Calcified pleural plaques at the level of the left diaphragmatic pleura. Loss of volume in the left lung with subpleural linear opacities. Findings are related ...
+GROUND TRUTH: The X-ray shows signs of trapped air, a flattened muscle under the lungs, and more space behind the breastbone. There are also hardened areas on the lung lining on the left side. The left lung has lost some volume and has some linear shadows near the outer lining. These findings are related to long-term inflammation caused by exposure to asbestos. Looking at the previous CT scan, there are no significant changes compared to the scanogram dated 3/4/2009.
+MODEL OUTPUT: The x-ray shows signs of air being trapped in the lungs, flattened diaphragm, and increased space behind the breastbone. There are calcified plaques on the left side of the diaphragm. The left lung has less volume with linear opacities. These findings are related to long-term inflammation caused by exposure to asbestos. The previous CT scan shows no significant changes compared to the one taken on 3/4/2009.
+
+--- Example 5 ---
+INPUT: Calcified granuloma in the right lung vertex. ...
+GROUND TRUTH: There is a calcified granuloma located at the top of the right lung.
+MODEL OUTPUT: There is a calcified granuloma, which is a type of hardened lump, in the right lung area.
+
+Final ROUGE Scores
+{'rouge1': np.float64(0.7050470905154624), 'rouge2': np.float64(0.5288976000819363), 'rougeL': np.float64(0.6579951511060707), 'rougeLsum': np.float64(0.6580987039946229)}
+
+### Trial 3: Test 200,000, Validation 2000, Learning Rate 3e-4
+In Training:
+Table
+
+loss curve
 
 Valuation metrics: {'valuation_loss': 0.30140259861946106, 'valuation_rouge1': 0.5303797909718861, 'valuation_rouge2': 0.38963944906846537, 'valuation_rougeL': 0.49262804248382636, 'valuation_rougeLsum': 0.5064069921726673, 'valuation_runtime': 71.4698, 'valuation_samples_per_second': 27.984, 'valuation_steps_per_second': 0.881, 'epoch': 3.0}
-
 
 --- Example Generation ---
 Report:
@@ -137,6 +210,7 @@ Ground Truth summary:
 Model summary:
  The chest shows significant air trapping. There are long-term changes at the top of both lungs. There is a curvature of the spine in the upper back. There is no sign of air in the chest cavity.
 
+In Testing:
 --- Example 0 ---
 INPUT: The chest shows significant air trapping. Bilateral apical chronic changes are present. Dorsal kyphosis is noted. No evidence of pneumothorax. ...
 GROUND TRUTH: The chest shows a large amount of trapped air. There are long-term changes at the top of both lungs. The upper back is curved outward. There is no sign of air in the space around the lungs.
@@ -162,11 +236,38 @@ INPUT: Calcified granuloma in the right lung vertex. ...
 GROUND TRUTH: There is a calcified granuloma located at the top of the right lung.
 MODEL OUTPUT: There is a calcified granuloma, which is a type of hardened lump, in the right lung area.
 
+Final ROUGE Score
 {'rouge1': np.float64(0.6884713874885872), 'rouge2': np.float64(0.5090535549465793), 'rougeL': np.float64(0.6399409171921827), 'rougeLsum': np.float64(0.640003186291338)}
 
-## Evalution
+### Trial 4: Test 20,000, Validation 2000, Learning Rate 2e-4
+In Training:
+table
 
-# Conclusion
+graph
+
+Valuation metrics: {'valuation_loss': 0.32267871499061584, 'valuation_rouge1': 0.5189141267183089, 'valuation_rouge2': 0.37682674160952473, 'valuation_rougeL': 0.48067478947913755, 'valuation_rougeLsum': 0.49497094889873633, 'valuation_runtime': 65.8633, 'valuation_samples_per_second': 30.366, 'valuation_steps_per_second': 0.957, 'epoch': 3.0}
+
+--- Example Generation ---
+Report:
+ The chest shows significant air trapping. Bilateral apical chronic changes are present. Dorsal kyphosis is noted. No evidence of pneumothorax. ...
+
+Ground Truth summary:
+ The chest shows a large amount of trapped air. There are long-term changes at the top of both lungs. The upper back is curved outward. There is no sign of air in the space around the lungs. 
+
+Model summary:
+ The chest shows significant air trapping. There are long-term changes in both lower parts of the lungs. There is a curvature of the spine in the upper back. There is no sign of air in the chest cavity.
+
+
+ 
+---
+## Conclusion
+Test 1 was done as a test with a smaller dataset to check if the code works, before testing on larger datasets. Test 2 scaled up test 1's dataset size by ten fold, and Test 3 tested with a lower learning rate to evaluate if more stable and accurate training could be achieved.
+
+
+
+---
+## Evalution
+If more time was allowed, for future projects I would do more testing on even larger datasets, and try to experiment with adjusting other training parameters as well. 
 
 
 Building an LLM
