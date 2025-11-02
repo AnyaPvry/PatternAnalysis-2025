@@ -125,9 +125,9 @@ During the prediction and evaluation stage, the fine-tuned FLAN-T5 model is relo
 
 ### Trial 0: Test 2000, Validation 200, Learning Rate 3e-4
 **In Training**
-Table
+<img width="673" height="132" alt="2000,200,3e-4table" src="https://github.com/user-attachments/assets/7332e9ef-8191-4be3-9825-bc3a85600bd7" />
 
-loss curve
+<img width="609" height="399" alt="2000,200,3e-4graph" src="https://github.com/user-attachments/assets/bea8a92d-c0db-41b2-813a-3c56086106e9" />
 
 Validation metrics: {'validation_loss': 0.5616681575775146, 'validation_rouge1': 0.4005814744200473, 'validation_rouge2': 0.22337463515126288, 'validation_rougeL': 0.34938132175511655, 'validation_rougeLsum': 0.3699470848351884, 'validation_runtime': 7.187, 'validation_samples_per_second': 27.828, 'validation_steps_per_second': 0.974, 'epoch': 3.0}
 
@@ -143,9 +143,9 @@ Model summary:
 
 ### Trial 1: Test 2000, Validation 200, Learning Rate 2e-4
 **In Training:**
-table
+<img width="1400" height="288" alt="2000,200,2e-4table" src="https://github.com/user-attachments/assets/c1f073a6-17bd-4e9c-8273-991680458c9c" />
 
-loss curve
+<img width="1376" height="866" alt="2000,200,2e-4graph" src="https://github.com/user-attachments/assets/4aad3d9e-2fa2-486d-8cf4-3bb8bb40b310" />
 
 Validation metrics: {'validation_loss': 0.4926953911781311, 'validation_rouge1': 0.43138340708215817, 'validation_rouge2': 0.2595719856552169, 'validation_rougeL': 0.3793345296400347, 'validation_rougeLsum': 0.40013170566378886, 'validation_runtime': 7.9915, 'validation_samples_per_second': 25.026, 'validation_steps_per_second': 0.876, 'epoch': 3.0}
 
@@ -190,9 +190,9 @@ Final ROUGE Scores:
 
 ### Trial 2: Test 20,000, Validation 2000, Learning Rate 3e-4
 **In Training:**
-Table
+<img width="636" height="137" alt="20000,2000,3e-4table" src="https://github.com/user-attachments/assets/8e393950-a271-4e05-b44c-2c565c090212" />
 
-loss curve
+<img width="609" height="393" alt="20000,2000,3e-4graph" src="https://github.com/user-attachments/assets/6f65d9e4-52e7-43a1-8903-dd3ca2e090d0" />
 
 Validation metrics: {'validation_loss': 0.30140259861946106, 'validation_rouge1': 0.5303797909718861, 'validation_rouge2': 0.38963944906846537, 'validation_rougeL': 0.49262804248382636, 'validation_rougeLsum': 0.5064069921726673, 'validation_runtime': 71.4698, 'validation_samples_per_second': 27.984, 'validation_steps_per_second': 0.881, 'epoch': 3.0}
 
@@ -237,9 +237,9 @@ Final ROUGE Score:
 
 ### Trial 3: Test 20,000, Validation 2000, Learning Rate 2e-4
 **In Training:**
-table
+<img width="633" height="132" alt="20000,2000,2e-4table" src="https://github.com/user-attachments/assets/e5dc4e3c-5012-4def-a97c-330886b515de" />
 
-graph
+<img width="1366" height="882" alt="20000,2000,2e-4graph" src="https://github.com/user-attachments/assets/1930b1c4-da40-49f4-9f9e-f5c782151f82" />
 
 Validation metrics: {'validation_loss': 0.32267871499061584, 'validation_rouge1': 0.5189141267183089, 'validation_rouge2': 0.37682674160952473, 'validation_rougeL': 0.48067478947913755, 'validation_rougeLsum': 0.49497094889873633, 'validation_runtime': 65.8633, 'validation_samples_per_second': 30.366, 'validation_steps_per_second': 0.957, 'epoch': 3.0}
 
