@@ -125,6 +125,7 @@ During the prediction and evaluation stage, the fine-tuned FLAN-T5 model is relo
 
 ### Trial 0: Test 2000, Validation 200, Learning Rate 3e-4
 **In Training**
+
 <img width="673" height="132" alt="2000,200,3e-4table" src="https://github.com/user-attachments/assets/7332e9ef-8191-4be3-9825-bc3a85600bd7" />
 
 <img width="609" height="399" alt="2000,200,3e-4graph" src="https://github.com/user-attachments/assets/bea8a92d-c0db-41b2-813a-3c56086106e9" />
@@ -143,6 +144,7 @@ Model summary:
 
 ### Trial 1: Test 2000, Validation 200, Learning Rate 2e-4
 **In Training:**
+
 <img width="1400" height="288" alt="2000,200,2e-4table" src="https://github.com/user-attachments/assets/c1f073a6-17bd-4e9c-8273-991680458c9c" />
 
 <img width="1376" height="866" alt="2000,200,2e-4graph" src="https://github.com/user-attachments/assets/4aad3d9e-2fa2-486d-8cf4-3bb8bb40b310" />
@@ -190,6 +192,7 @@ Final ROUGE Scores:
 
 ### Trial 2: Test 20,000, Validation 2000, Learning Rate 3e-4
 **In Training:**
+
 <img width="636" height="137" alt="20000,2000,3e-4table" src="https://github.com/user-attachments/assets/8e393950-a271-4e05-b44c-2c565c090212" />
 
 <img width="609" height="393" alt="20000,2000,3e-4graph" src="https://github.com/user-attachments/assets/6f65d9e4-52e7-43a1-8903-dd3ca2e090d0" />
@@ -237,6 +240,7 @@ Final ROUGE Score:
 
 ### Trial 3: Test 20,000, Validation 2000, Learning Rate 2e-4
 **In Training:**
+
 <img width="633" height="132" alt="20000,2000,2e-4table" src="https://github.com/user-attachments/assets/e5dc4e3c-5012-4def-a97c-330886b515de" />
 
 <img width="1366" height="882" alt="20000,2000,2e-4graph" src="https://github.com/user-attachments/assets/1930b1c4-da40-49f4-9f9e-f5c782151f82" />
