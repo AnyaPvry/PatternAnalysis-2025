@@ -1,7 +1,7 @@
-# Report: Fine Tuning FLAN-T5 on BioLaySumm dataset
+# Report: Fine-Tuning FLAN-T5 on BioLaySumm dataset
 
 ## Introduction
-This task performs fine tuning on a pretrained model, FLAN-T5, to translate expert radiology reports into layperson summaries using the BioLaySumm dataset. The goal is to build a summarization model that produces clear, human-readable reports suitable for patients and non-medical readers. 
+This task performs fine-tuning on a pretrained model, FLAN-T5, to translate expert radiology reports into layperson summaries using the BioLaySumm dataset. The goal is to build a summarization model that produces clear, human-readable reports suitable for patients and non-medical readers. 
 
 ## Problem Space
 Medical imaging reports are written by radiologists for specialists, often containing complex terminology and syntax. This makes them difficult for patients to understand.  
@@ -21,13 +21,13 @@ pip install datasets evaluate rouge-score torch tensorboard
 
 ---
 ## Folder Structure
-1. modules.py: loads the flan-t5 model, tokenizer, seq2seq data collator, and is where main is located. Does not follow task sheet suggestion of having source code for compoenets of my model since Flan-T5 is a pre-trained model from Hugging Face, its architecture is already implemented and only needs to be loaded, not redefined.
+1. modules.py: loads the flan-t5 model, tokenizer, seq2seq data collator, and is where main is located. Does not follow task sheet suggestion of having source code for components of my model since Flan-T5 is a pre-trained model from Hugging Face, its architecture is already implemented and only needs to be loaded, not redefined.
 
-2. dataset.py: contians the data loader, preparation, and preprocessing functionality.
+2. dataset.py: contains the data loader, preparation, and preprocessing functionality.
 
-3. train.py: contains the training, validating, testing (tested traning with a subset of validation data) and saving of the fine-tuned model. Training results displayed includes a training loss curve, validation metrics, and example generation of one sample run.
+3. train.py: contains the training, validating, testing (tested training with a subset of validation data) and saving of the fine-tuned model. Training results displayed includes a training loss curve, validation metrics, and example generation of one sample run.
 
-4. predict.py: Tests the final fine tuned model on the whole validation dataset, with final outputs displaying example results and rouge scores.
+4. predict.py: Tests the final fine-tuned model on the whole validation dataset, with final outputs displaying example results and rouge scores.
 
 - BioLaySumm_FlanT5_Finetuning.ipynb: code used to run on google colab.
 
@@ -44,17 +44,17 @@ The raw dataset comes in this structure:
 Each with the fields: source, images_path, radiology_report, layman_report.
 
 Once the dataset is loaded, preparation is done to extract only specific data required for the purpose of the task.
-This includes ommiting the test dataset because it does not come with any layman_report data, thus future evalidation with ground truth comparison would not be possible. 
+This includes omitting the test dataset, because it does not come with any layman_report data, so ground-truth evaluation would not be possible.
 
 As such, a custom clean_up function is applied to only the train and validation datasets, where further extraction of only the radiology_report and layman_report fields processed and used. The processing entails striping of leading and trailing spaces or newline characters from each entry, and removing any examples where either the radiology report or layman report was missing or empty. Hence future tokenization does not have to be perfomed on empty strings or fields, wasting learning capacity.
 
-A subset of each datast is also chosen through selecting a fixed range; this is set for prototyping on a smaller instruction dataset, then scaling and readjustment with trial and error to find optimal dataset size. 
+A subset of each dataset is also chosen through selecting a fixed range; this is set for prototyping on a smaller instruction dataset, then scaling and readjustment with trial and error to find optimal dataset size. 
 Shuffling with fixed seed is also set for reproducability and ensures the training data is randomized in a consistent manner across runs, preventing any bias from the original dataset order while maintaining deterministic reproducibility.
 
 ### 2. Data Formatting and Preprocessing (modules.py)
 This stage prepares the dataset for input into the Flan-T5 model. The tokenizer is first loaded in modules.py and is responsible for converting raw text into model-readable numerical format. Specifically, the tokenizer splits each text sequence into subword tokens and maps these tokens into token IDs, which correspond to entries in the model’s vocabulary.
 
-Each radiology report is prefixed with an instruction prompt for instruction fine tuning—
+Each radiology report is prefixed with an instruction prompt for instruction fine-tuning:
 "Summarize this radiology report for a layperson: " —
 
 The function preprocess_dataset() applies tokenization separately to the training and validation subsets. For each sample, two main text fields are processed:
@@ -81,7 +81,7 @@ Finally, the processed datasets are returned as tokenized_train and tokenized_va
 (Huggingface.co, 2018)
 
 ### 3. Collate and Batching (modules.py)
-Instruction fine tuning data preparation:
+Instruction fine-tuning data preparation:
 After tokenization, the dataset still consists of Python lists of token IDs with variable lengths. However, the model expects each batch to be a set of tensors with the same sequence length. To handle this automatically, we use the Hugging Face utility:
 ```
 data_collator = DataCollatorForSeq2Seq(tokenizer=tokenizer, model=model)
@@ -188,7 +188,7 @@ MODEL OUTPUT: There is a calcified granuloma, which is a type of hardened lump, 
 Final ROUGE Scores:
 {'rouge1': np.float64(0.7050470905154624), 'rouge2': np.float64(0.5288976000819363), 'rougeL': np.float64(0.6579951511060707), 'rougeLsum': np.float64(0.6580987039946229)}
 
-### Trial 2: Test 200,000, Validation 2000, Learning Rate 3e-4
+### Trial 2: Test 20,000, Validation 2000, Learning Rate 3e-4
 **In Training:**
 Table
 
@@ -253,7 +253,7 @@ Ground Truth summary:
 Model summary:
  The chest shows significant air trapping. There are long-term changes in both lower parts of the lungs. There is a curvature of the spine in the upper back. There is no sign of air in the chest cavity.
 
-**In Testing**
+**In Testing:**
 --- Example 1 ---
 INPUT: The chest shows significant air trapping. Bilateral apical chronic changes are present. Dorsal kyphosis is noted. No evidence of pneumothorax. ...
 GROUND TRUTH: The chest shows a large amount of trapped air. There are long-term changes at the top of both lungs. The upper back is curved outward. There is no sign of air in the space around the lungs.
@@ -285,7 +285,7 @@ Final ROUGE Score:
 ---
 ## Conclusion
 
-###Trial 1 — (Train: 2000 | Val: 200 | LR = 3e-4)
+###Trial 0 — (Train: 2000 | Val: 200 | LR = 3e-4)
 Test trial on small dataset and no test data was recorded
 
 **Training Results**
@@ -299,7 +299,7 @@ Overall performance was modest, showing that the model captured basic patterns b
 
 Examples: Model outputs closely resembled the input phrasing with minor structural errors (e.g., repetition such as “apical apical changes”). It correctly captured the meaning but with poor lexical variety and redundancy.
 
-###Trial 2 — (Train: 2000 | Val: 200 | LR = 2e-4)
+###Trial 1 — (Train: 2000 | Val: 200 | LR = 2e-4)
 Test trial on same small dataset but with lower learning rate
 
 **Testing Results**
@@ -322,7 +322,7 @@ Final ROUGE Score:
 
 These higher scores indicate stronger alignment with reference summaries and effective fine-tuning even on a small dataset.
 
-Trial 3 — (Train: 20,000 | Val: 2,000 | LR = 3e-4)
+###Trial 2 — (Train: 20,000 | Val: 2,000 | LR = 3e-4)
 Scale up dataset by ten fold.
 
 **Training Results**
@@ -345,7 +345,7 @@ Final ROUGE Score:
 
 Strong results indicating balanced generalization and fluency, with near-human readability in summaries.
 
-Trial 4 — (Train: 20,000 | Val: 2,000 | LR = 2e-4)
+###Trial 3 — (Train: 20,000 | Val: 2,000 | LR = 2e-4)
 
 **Training Results**
 Table & Graph: The model converged smoothly with a slightly slower rate than Trial 3, suggesting more conservative learning. Training remained stable across all epochs.
@@ -368,7 +368,7 @@ Final ROUGE Score:
 Slightly below Trial 3 but still demonstrating robust summarization quality with stable language generation.
 
 ---
-## Evalution
+## Evaluation
 
 Final ROUGE scores
 | Trial no. | ROUGE-1 | ROUGE-2 | ROUGE-L |
