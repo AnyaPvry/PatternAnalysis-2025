@@ -98,7 +98,7 @@ The attention_mask guides the model to focus only on valid tokens during computa
 
 Finally, the processed datasets are returned as tokenized_train and tokenized_val, each containing only the columns needed for training — input_ids, attention_mask, and labels. This ensures a clean, structured format ready for the model’s fine-tuning pipeline.
 
-(“Tokenizer,” 2018)
+(Huggingface.co, 2018)
 
 ### 3. Collate and Batching (modules.py)
 Instruction fine tuning data preparation:
@@ -110,21 +110,34 @@ This automatically pads all inputs and targets in each batch to the same length,
 
 It also prepares the decoder inputs by shifting the target tokens one position to the right, enabling the model to learn to predict the next token in the sequence. This step is essential for sequence-to-sequence fine-tuning, allowing the decoder to generate fluent, coherent summaries token by token.
 
+(Raschka, 2025)
+
 ### 4. Create Data Loader
 In this project, the Seq2SeqTrainer automatically creates and manages the data loaders internally using the preprocessed datasets and DataCollatorForSeq2Seq. Therefore, no separate DataLoader initialization is required.
 
 ### 5. Initialize Model FLAN-T5-base (modules.py)
 
+(Ph.D & Noble, 2024)
 
 ### 6. Fine-tuning (train.py)
-...
+This step takes the pre-trained FLAN-T5 weights and adapts them to our radiology to layman summarisation task. We define Seq2SeqTrainingArguments to control the run:
+- output_dir tells Hugging Face where to write checkpoints,
+- evaluation_strategy="epoch" runs validation after every epoch,
 
-### 7. Generate and Save Responses (train.py)
+learning_rate=2e-4 gives stable updates on our dataset,
 
+per_device_train_batch_size / per_device_eval_batch_size control GPU memory,
+
+predict_with_generate=True makes the trainer actually generate summaries during eval so we can score them,
+
+report_to="none" disables external logging.
+Then Seq2SeqTrainer(...) is created with the model, the tokenized train/val sets, the DataCollatorForSeq2Seq (for padding + label masking), and compute_metrics(...), which decodes predictions and computes ROUGE. Calling trainer.train() runs the full fine-tuning loop on GPU.
+
+### 7. Generate and Save Responses
+After training finishes, we save the fine-tuned model and tokenizer to disk (trainer.save_model(...), tokenizer.save_pretrained(...)) so the same weights can be reloaded later for testing or deployment. We also run a quick generation pass on a sample radiology report using the same instruction prompt; this gives us a human-readable example of what the model actually learned, separate from the numeric ROUGE scores.
 
 ### 8. Model Evaluation (predict.py)
-
-Tested on all 10k validation dataset
+During the prediction and evaluation stage, the fine-tuned FLAN-T5 model is reloaded from the saved checkpoint and used to generate summaries for unseen test reports. The model is tested on all 10k validation datasets; it receives each radiology report as input, tokenizes it, and decodes the output sequence using beam search (a decoding method that keeps multiple likely outputs at each step to choose the best overall summary) to produce the most likely layman summary. These generated outputs are then compared against the ground-truth summaries to evaluate model performance. The evaluation uses ROUGE metrics—which measure text overlap between predicted and reference summaries—to assess accuracy, fluency, and content preservation. This final testing step verifies how well the model generalizes beyond the training data and reflects its real-world summarization quality.
 
 ---
 ## Results
@@ -395,12 +408,4 @@ Overall, Trial 3 achieved the best balance of accuracy and stability. Increasing
 
 If more time was allowed, for future projects I would do more testing on even larger datasets, and try to experiment with adjusting other training parameters as well. 
 
-
-Building an LLM
- - 
-
- Tokenization
-
  After pretraining, the model knows general language, but not how to follow human instructions. Instruction fine-tuning ttranins it on prias of instructions and desired replies so it learnss to respond in the way people expect
-
----

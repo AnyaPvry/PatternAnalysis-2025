@@ -93,5 +93,6 @@ def generate_lay_summary(model, tokenizer, radiology_report):
     PREFIX = "Summarize this radiology report for a layperson: "
     text = PREFIX + radiology_report
     inputs = tokenizer(text, return_tensors="pt").to(model.device)
-    outputs = model.generate(**inputs, num_beams=2, max_new_tokens=128)
+    GR = model.generate(**inputs, num_beams=2, max_new_tokens=128)
     return tokenizer.decode(outputs[0], skip_special_tokens=True)
+

@@ -23,13 +23,39 @@ if __name__ == "__main__":
     # 6. Fine-tuning
     trainer = fine_tune_model(model, tokenizer, data_collator, tokenized_train, tokenized_val)
 
-    # visualize loss
+    # Visualize loss curve
     plot_training_curve(trainer)
 
     # Generate and display example summary
     sample = subset_val[0]
     print("\n--- Example Generation ---")
     print("Report:\n", sample["radiology_report"][:300], "...\n")
-    print("Gold summary:\n", sample["layman_report"], "\n")
+    print("Ground Truth summary:\n", sample["layman_report"], "\n")
     print("Model summary:\n", generate_lay_summary(model, tokenizer, sample["radiology_report"]))
 
+    # 8. Test and Model Evaluation
+    # Load model and tokenizer
+    model, tokenizer = load_finetuned_model("./saved_models/final")
+
+    # Load dataset and preprocessing
+    dataset = load_clean_dataset()
+    subset_test, tokenized_test = tokenize_test_data(dataset, preprocess_function, cols_to_keep)
+
+    # Generate summaries
+    decoded_preds = generate_predictions(model, tokenizer, tokenized_test)
+
+    # Build results list
+    results = [
+        (
+            subset_test[i]["radiology_report"],   # input text
+            subset_test[i]["layman_report"],      # ground truth summary
+            decoded_preds[i],                     # model-generated summary
+        )
+        for i in range(len(subset_test))
+    ]
+
+    # Display first few examples
+    display_examples(results)
+
+    # Compute ROUGE scores
+    compute_rouge_from_results(results)
