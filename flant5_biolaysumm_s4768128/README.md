@@ -145,9 +145,9 @@ Model summary:
 ### Trial 1: Test 2000, Validation 200, Learning Rate 2e-4
 **In Training:**
 
-<img width="1400" height="288" alt="2000,200,2e-4table" src="https://github.com/user-attachments/assets/c1f073a6-17bd-4e9c-8273-991680458c9c" />
+<img width="673" height="132" alt="2000,200,2e-4table" src="https://github.com/user-attachments/assets/c1f073a6-17bd-4e9c-8273-991680458c9c" />
 
-<img width="1376" height="866" alt="2000,200,2e-4graph" src="https://github.com/user-attachments/assets/4aad3d9e-2fa2-486d-8cf4-3bb8bb40b310" />
+<img width="609" height="399" alt="2000,200,2e-4graph" src="https://github.com/user-attachments/assets/4aad3d9e-2fa2-486d-8cf4-3bb8bb40b310" />
 
 Validation metrics: {'validation_loss': 0.4926953911781311, 'validation_rouge1': 0.43138340708215817, 'validation_rouge2': 0.2595719856552169, 'validation_rougeL': 0.3793345296400347, 'validation_rougeLsum': 0.40013170566378886, 'validation_runtime': 7.9915, 'validation_samples_per_second': 25.026, 'validation_steps_per_second': 0.876, 'epoch': 3.0}
 
@@ -243,7 +243,7 @@ Final ROUGE Score:
 
 <img width="633" height="132" alt="20000,2000,2e-4table" src="https://github.com/user-attachments/assets/e5dc4e3c-5012-4def-a97c-330886b515de" />
 
-<img width="1366" height="882" alt="20000,2000,2e-4graph" src="https://github.com/user-attachments/assets/1930b1c4-da40-49f4-9f9e-f5c782151f82" />
+<img width="609" height="393" alt="20000,2000,2e-4graph" src="https://github.com/user-attachments/assets/1930b1c4-da40-49f4-9f9e-f5c782151f82" />
 
 Validation metrics: {'validation_loss': 0.32267871499061584, 'validation_rouge1': 0.5189141267183089, 'validation_rouge2': 0.37682674160952473, 'validation_rougeL': 0.48067478947913755, 'validation_rougeLsum': 0.49497094889873633, 'validation_runtime': 65.8633, 'validation_samples_per_second': 30.366, 'validation_steps_per_second': 0.957, 'epoch': 3.0}
 
