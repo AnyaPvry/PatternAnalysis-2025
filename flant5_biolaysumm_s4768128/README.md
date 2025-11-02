@@ -31,7 +31,7 @@ pip install datasets evaluate rouge-score torch tensorboard
 
 - BioLaySumm_FlanT5_Finetuning.ipynb: code used to run on google colab.
 
-
+---
 ## Implementation process run through
 Structure follows lecture (Zhang, 2025)
 
@@ -96,22 +96,15 @@ It also prepares the decoder inputs by shifting the target tokens one position t
 In this project, the Seq2SeqTrainer automatically creates and manages the data loaders internally using the preprocessed datasets and DataCollatorForSeq2Seq. Therefore, no separate DataLoader initialization is required.
 
 ### 5. Initialize Model FLAN-T5-base (modules.py)
-
+The FLAN-T5 model is a variant of Google’s T5 (Text-to-Text Transfer Transformer) that has been further instruction-tuned using a large collection of diverse tasks to improve its ability to follow prompts and generate coherent, task-specific text. It follows an encoder–decoder architecture, meaning the model consists of two main components: the encoder, which reads and transforms the input text (in this case, a radiology report combined with an instruction prompt) into a rich numerical representation, and the decoder, which uses that representation to generate the target output sequence — here, the simplified layman summary. During training, the decoder operates with masked self-attention, preventing it from seeing future tokens and ensuring it predicts one word at a time. This design allows FLAN-T5 to handle a wide range of text-to-text tasks such as summarization, translation, and question answering using the same unified framework.
 (Ph.D & Noble, 2024)
 
 ### 6. Fine-tuning (train.py)
-This step takes the pre-trained FLAN-T5 weights and adapts them to our radiology to layman summarisation task. We define Seq2SeqTrainingArguments to control the run:
-- output_dir tells Hugging Face where to write checkpoints,
-- evaluation_strategy="epoch" runs validation after every epoch,
+To fine-tune an encoder–decoder model, a full manual training process involves several key steps: first, moving the model to the appropriate device (CPU or GPU) and defining an optimizer such as AdamW with a suitable learning rate and weight decay. Then, during each epoch, batches of tokenized input–target pairs are passed through the model, where the encoder processes the input sequence and the decoder generates the output sequence one token at a time. The loss (usually cross-entropy) is calculated between the decoder’s predicted tokens and the true target tokens, after applying masking so that padding tokens and future tokens do not affect training. Label shifting is also performed, where the decoder’s input tokens are shifted one position to the right so the model learns to predict the next token at each step. The loss is then back-propagated with loss.backward(), and the optimizer updates the model’s parameters with optimizer.step(). After each training cycle, the model is evaluated on validation data to monitor overfitting, and metrics like loss or ROUGE are recorded. This full loop - data batching, forward and backward passes, gradient updates, evaluation, and plotting - forms the foundation of fine-tuning an encoder–decoder model manually.
+(Raschka, 2025a)
 
-learning_rate=2e-4 gives stable updates on our dataset,
-
-per_device_train_batch_size / per_device_eval_batch_size control GPU memory,
-
-predict_with_generate=True makes the trainer actually generate summaries during eval so we can score them,
-
-report_to="none" disables external logging.
-Then Seq2SeqTrainer(...) is created with the model, the tokenized train/val sets, the DataCollatorForSeq2Seq (for padding + label masking), and compute_metrics(...), which decodes predictions and computes ROUGE. Calling trainer.train() runs the full fine-tuning loop on GPU.
+However, in the current implementation in train.py, this entire manual process is handled automatically through the Seq2SeqTrainer class from the Hugging Face Transformers library. This high-level function is specifically built for sequence-to-sequence (seq2seq) models like FLAN-T5 and encapsulates all the core training steps under the hood — batching, masking, label shifting, forward and backward passes, and evaluation. When initialized, the Seq2SeqTrainer takes in the model, tokenizer, tokenized datasets, and a data collator, which automatically pads sequences and masks label padding tokens (by setting them to -100 so they are ignored in the loss). It also manages learning-rate scheduling, gradient updates, and periodic validation based on parameters defined in Seq2SeqTrainingArguments. This means the code only needs to specify configuration options such as learning rate, batch size, number of epochs, and evaluation strategy, while the trainer handles the detailed encoder–decoder fine-tuning workflow internally.
+(Fraidoon Omarzai, 2024)
 
 ### 7. Generate and Save Responses
 After training finishes, we save the fine-tuned model and tokenizer to disk (trainer.save_model(...), tokenizer.save_pretrained(...)) so the same weights can be reloaded later for testing or deployment. We also run a quick generation pass on a sample radiology report using the same instruction prompt; this gives us a human-readable example of what the model actually learned, separate from the numeric ROUGE scores.
@@ -380,12 +373,26 @@ Slightly below Trial 3 but still demonstrating robust summarization quality with
 Final ROUGE scores
 | Trial no. | ROUGE-1 | ROUGE-2 | ROUGE-L |
 | --- | --- | --- | -- |
-| Trial 1 | 0.7050 | 0.5289 | 0.6580
-| Trial 2 | 0.6885 | 0.5090 | 0.6399
-| Trial 3 | 0.6839 | 0.4985 | 0.6336
+| Trial 1 | 0.7050 | 0.5289 | 0.6580 |
+| Trial 2 | 0.6885 | 0.5090 | 0.6399 |
+| Trial 3 | 0.6839 | 0.4985 | 0.6336 |
 
 Overall, Trial 3 achieved the best balance of accuracy and stability. Increasing the dataset size from 2 k to 20 k examples led to clear gains in ROUGE scores and lower validation loss, showing that data scale was the primary driver of performance improvement - larger data volumes allow the model to learn richer vocabulary and generalize better to unseen samples. The learning-rate experiments showed that, in the small-data runs, the lower rate (2 × 10⁻⁴) caused more oscillation and slower convergence, while the higher rate (3 × 10⁻⁴) produced a smoother loss curve and faster stabilization. On the larger dataset, both rates trained stably, but 3 × 10⁻⁴ reached the best overall metrics. Hence, performance correlated most strongly with dataset size, and the optimal setup combined a large dataset with the slightly higher learning rate (Trial 3).
 
 If more time was allowed, for future projects I would do more testing on even larger datasets, and try to experiment with adjusting other training parameters as well. 
 
- After pretraining, the model knows general language, but not how to follow human instructions. Instruction fine-tuning ttranins it on prias of instructions and desired replies so it learnss to respond in the way people expect
+---
+## References
+BioLaySumm Shared Task at ACL (2025). BioLaySumm2025-LaymanRRG-opensource-track. [online] Huggingface.co. Available at: https://huggingface.co/datasets/BioLaySumm/BioLaySumm2025-LaymanRRG-opensource-track [Accessed 31 Oct. 2025].
+
+Fraidoon Omarzai (2024). Seq2Seq (Encoder/Decoder) And Attention Mechanism In Depth. [online] Medium. Available at: https://medium.com/@fraidoonomarzai99/seq2seq-encoder-decoder-and-attention-mechanism-in-depth-417ef88037f1 [Accessed 2 Nov. 2025].
+
+Huggingface.co (2018). Tokenizer. [online] Huggingface.co. Available at: https://huggingface.co/docs/transformers/en/main_classes/tokenizer [Accessed 2 Nov. 2025].
+
+Ph.D, J.M. and Noble, J. (2024). Encoder-Decoder Model. [online] Ibm.com. Available at: https://www.ibm.com/think/topics/encoder-decoder-model [Accessed 2 Nov. 2025].
+
+Raschka, S. (2025a). LLMs-from-scratch/ch06/01_main-chapter-code/ch06.ipynb at main · rasbt/LLMs-from-scratch. [online] GitHub. Available at: https://github.com/rasbt/LLMs-from-scratch/blob/main/ch06/01_main-chapter-code/ch06.ipynb [Accessed 2 Nov. 2025].
+
+Raschka, S. (2025b). LLMs-from-scratch/ch07/01_main-chapter-code/ch07.ipynb at main · rasbt/LLMs-from-scratch. [online] GitHub. Available at: https://github.com/rasbt/LLMs-from-scratch/blob/main/ch07/01_main-chapter-code/ch07.ipynb [Accessed 2 Nov. 2025].
+
+Zhang, W.J. (2025). Pattern Recognition & Analysis. [online] Echo360.net.au. Available at: https://echo360.net.au/lesson/G_fde22b56-871b-44dc-a414-3f0daef36297_6eb37e58-02e7-4d09-bb66-8fd27ee4b585_2025-10-13T10:00:00.000_2025-10-13T11:00:00.000/classroom [Accessed 2 Nov. 2025].
