@@ -13,10 +13,23 @@ def load_model():
     return tokenizer, model, data_collator
 
 if __name__ == "__main__":
+    # 5. Initialize Model
     tokenizer, model, data_collator = load_model()
 
-    subset_train, subset_val = clean_dataset()
+    # 2. Load and preprocess dataset
+    subset_train, subset_val = load_clean_dataset()
     tokenized_train, tokenized_val = preprocess_dataset(subset_train, subset_val, tokenizer)
-    
-    
+
+    # 6. Fine-tuning
+    trainer = fine_tune_model(model, tokenizer, data_collator, tokenized_train, tokenized_val)
+
+    # visualize loss
+    plot_training_curve(trainer)
+
+    # Generate and display example summary
+    sample = subset_val[0]
+    print("\n--- Example Generation ---")
+    print("Report:\n", sample["radiology_report"][:300], "...\n")
+    print("Gold summary:\n", sample["layman_report"], "\n")
+    print("Model summary:\n", generate_lay_summary(model, tokenizer, sample["radiology_report"]))
 

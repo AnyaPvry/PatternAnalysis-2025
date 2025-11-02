@@ -53,6 +53,7 @@ pip install datasets evaluate rouge-score torch tensorboard
 
 
 ## Implementation process run through
+Structure follows lecture (Zhang, 2025)
 
 ### 1. Data Loading and Preparation (dataset.py)
 The BioLaySumm dataset is imported from hugging face library (BioLaySumm Shared Task at ACL, 2025).
@@ -114,13 +115,14 @@ In this project, the Seq2SeqTrainer automatically creates and manages the data l
 
 ### 5. Initialize Model FLAN-T5-base (modules.py)
 
-### 6. Fine-tuning ()
+
+### 6. Fine-tuning (train.py)
 ...
 
-### 7. Generate and Save Responses
+### 7. Generate and Save Responses (train.py)
 
 
-### 8. Model Evaluation
+### 8. Model Evaluation (predict.py)
 
 Tested on all 10k validation dataset
 

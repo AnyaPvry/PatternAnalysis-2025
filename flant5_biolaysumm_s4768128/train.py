@@ -2,124 +2,96 @@ import os
 import numpy as np
 import nltk
 import evaluate
+import matplotlib.pyplot as plt
 from transformers import Seq2SeqTrainingArguments, Seq2SeqTrainer
 
-# Saving model on local device
-SAVE_DIR = "./saved_models/final"
-os.makedirs(SAVE_DIR, exist_ok=True)
-
-# Metric
-metric = evaluate.load("rouge")
-
-def compute_metrics(eval_preds):
+# Compute ROUGE metrics
+def compute_metrics(eval_preds, tokenizer):
+    """Compute ROUGE metrics for validation/evaluation"""
     preds, labels = eval_preds
 
-    # replace -100 with pad token for decoding
+    # Replace -100 (ignored positions) with pad_token_id for decoding
     labels = np.where(labels != -100, labels, tokenizer.pad_token_id)
 
+    # Decode token IDs back to text
     decoded_preds = tokenizer.batch_decode(preds, skip_special_tokens=True)
     decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
 
-    # sentence split for rougeLSum
+    # Split into sentences for ROUGE-LSum
     decoded_preds = ["\n".join(nltk.sent_tokenize(p.strip())) for p in decoded_preds]
     decoded_labels = ["\n".join(nltk.sent_tokenize(l.strip())) for l in decoded_labels]
 
-    result = metric.compute(
-        predictions=decoded_preds,
-        references=decoded_labels,
-        use_stemmer=True,
+    # Compute ROUGE scores
+    metric = evaluate.load("rouge")
+    return metric.compute(predictions=decoded_preds, references=decoded_labels, use_stemmer=True)
+
+# 2. Fine-tuning and training loop
+def fine_tune_model(model, tokenizer, data_collator, tokenized_train, tokenized_val, save_dir="./saved_models/final"):
+    """Train and evaluate the FLAN-T5 model"""
+    os.makedirs(save_dir, exist_ok=True)  # ensure save directory exists
+
+    # Define training configuration
+    training_args = Seq2SeqTrainingArguments(
+        output_dir=save_dir,                 # where to save checkpoints
+        evaluation_strategy="epoch",         # evaluate after each epoch
+        learning_rate=2e-4,                  # tuned LR for stable training
+        per_device_train_batch_size=32,
+        per_device_eval_batch_size=32,
+        weight_decay=0.01,
+        num_train_epochs=3,
+        logging_steps=10,
+        logging_first_step=True,
+        predict_with_generate=True,          # generate text during eval
+        push_to_hub=False,
+        report_to="none",                    # no external logging
     )
-    return result
 
-# Training arguments
-from transformers import Seq2SeqTrainingArguments, Seq2SeqTrainer
+    # Move model to GPU and force full precision
+    model = model.to("cuda").float()
 
-training_args = Seq2SeqTrainingArguments(
-    output_dir="/content/drive/MyDrive/saved_models/",
-    eval_strategy="epoch",             # use new argument name
-    learning_rate=2e-4,             # smaller lr → more stable
-    per_device_train_batch_size=32,
-    per_device_eval_batch_size=32,   # 👈 add this
-    weight_decay=0.01,
-    num_train_epochs=3,
-    fp16=False,                     # absolutely disable mixed precision
-    bf16=False,                     # also disable bfloat16
-    logging_steps=10,
-    logging_first_step=True,
-    predict_with_generate=True,
-    report_to="none",
-    remove_unused_columns=False,
-    label_names=["labels"],         # tell trainer where to find labels
-    #max_grad_norm=1.0,              # clip gradients to avoid explosions
-)
+    # Initialize Hugging Face Trainer
+    trainer = Seq2SeqTrainer(
+        model=model,
+        args=training_args,
+        train_dataset=tokenized_train,
+        eval_dataset=tokenized_val,
+        tokenizer=tokenizer,
+        data_collator=data_collator,
+        compute_metrics=lambda p: compute_metrics(p, tokenizer),  # attach metrics
+    )
 
-# Force model to FP32 just in case
-model = model.to("cuda").float()
+    # Start fine-tuning
+    trainer.train()
 
-# 7. Trainer
-trainer = Seq2SeqTrainer(
-    model=model,
-    args=training_args,
-    train_dataset=tokenized_train,
-    eval_dataset=tokenized_val,
-    tokenizer=tokenizer,
-    data_collator=data_collator,
-    compute_metrics=compute_metrics,
-)
+    # Save model and tokenizer AFTER training completes
+    trainer.save_model(save_dir)
+    tokenizer.save_pretrained(save_dir)
+    print(f"Final model and tokenizer saved to: {save_dir}")
 
-# Train
-trainer.train()
-print(trainer.state.log_history[-10:])
-
-# Save trained model locally
-import os
-
-SAVED_PATH = "./saved_models/final" 
-os.makedirs(SAVED_PATH, exist_ok=True)  # make sure folder exists
-
-trainer.save_model(SAVED_PATH)
-tokenizer.save_pretrained(SAVED_PATH)
-
-print(f"Final model and tokenizer saved locally to: {SAVED_PATH}")
-
-
-# Training Loss Curve
-import matplotlib.pyplot as plt
-
-# Extract loss values from training logs
-logs = trainer.state.log_history
-train_steps = [entry["step"] for entry in logs if "loss" in entry]
-train_loss = [entry["loss"] for entry in logs if "loss" in entry]
+    return trainer
 
 # Plot training loss curve
-plt.figure(figsize=(7,4))
-plt.plot(train_steps, train_loss, label="Training Loss")
-plt.xlabel("Training Step")
-plt.ylabel("Loss")
-plt.title("FLAN-T5 Training Loss Curve")
-plt.legend()
-plt.grid(True)
-plt.show()
+def plot_training_curve(trainer):
+    """Plot training loss to visualize convergence"""
+    logs = trainer.state.log_history
+    train_steps = [entry["step"] for entry in logs if "loss" in entry]
+    train_loss = [entry["loss"] for entry in logs if "loss" in entry]
 
+    plt.figure(figsize=(7, 4))
+    plt.plot(train_steps, train_loss, label="Training Loss")
+    plt.xlabel("Training Step")
+    plt.ylabel("Loss")
+    plt.title("FLAN-T5 Training Loss Curve")
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+    
 
-
-
-# Testing evaluation with validation dataset
-# Quick test evaluation
-trainer.args.predict_with_generate = True  # enable generation for evaluation
-val_metrics = trainer.evaluate(tokenized_val, metric_key_prefix="valuation")
-print("Valuation metrics:", val_metrics)
-
-# 10. Generate one example 
-def generate_lay_summary(radiology_report):
-    val = PREFIX + radiology_report
-    inputs = tokenizer(val, return_tensors="pt").to(model.device)
+# Generate lay summary for a single report
+def generate_lay_summary(model, tokenizer, radiology_report):
+    """Generate lay summary from a single radiology report"""
+    PREFIX = "Summarize this radiology report for a layperson: "
+    text = PREFIX + radiology_report
+    inputs = tokenizer(text, return_tensors="pt").to(model.device)
     outputs = model.generate(**inputs, num_beams=2, max_new_tokens=128)
     return tokenizer.decode(outputs[0], skip_special_tokens=True)
-
-sample = small_val[0]
-print("\n--- Example Generation ---")
-print("Report:\n", sample["radiology_report"][:300], "...\n")
-print("Gold summary:\n", sample["layman_report"], "\n")
-print("Model summary:\n", generate_lay_summary(sample["radiology_report"]))
-
