@@ -33,10 +33,13 @@ def clean_dataset():
 
 # 2. Data Formatting and Preprocessing
 def preprocess_dataset(subset_train, subset_val, tokenizer, max_input_len=256, max_target_len=128):
-    PREFIX = "Summarize this radiology report for a layperson: "
+    PREFIX = "Summarize this radiology report for a layperson: "  # Instruction prompt to guide summarization
 
     def preprocess_function(batch):
+        # Add prefix to each input report for task conditioning
         inputs = [PREFIX + x for x in batch["radiology_report"]]
+
+        # Tokenize input (radiology report)
         model_inputs = tokenizer(
             inputs,
             max_length=max_input_len,
@@ -44,6 +47,7 @@ def preprocess_dataset(subset_train, subset_val, tokenizer, max_input_len=256, m
             padding="longest"
         )
 
+        # Tokenize target (layman summary)
         labels = tokenizer(
             text_target=batch["layman_report"],
             max_length=max_target_len,
@@ -51,19 +55,26 @@ def preprocess_dataset(subset_train, subset_val, tokenizer, max_input_len=256, m
             padding="longest",
         )
 
+        # Add tokenized target IDs as labels for decoder supervision
         model_inputs["labels"] = labels["input_ids"]
         return model_inputs
 
+    # Keep only required fields for model input
     cols_to_keep = ["input_ids", "attention_mask", "labels"]
 
+    # Apply preprocessing to training subset
     tokenized_train = subset_train.map(
         preprocess_function,
-        batched=True,
+        batched=True,  # Process multiple examples per batch
         remove_columns=[c for c in subset_train.column_names if c not in cols_to_keep],
     )
+
+    # Apply preprocessing to validation subset
     tokenized_val = subset_val.map(
         preprocess_function,
         batched=True,
         remove_columns=[c for c in subset_val.column_names if c not in cols_to_keep],
     )
+
+    # Return formatted datasets ready for training
     return tokenized_train, tokenized_val

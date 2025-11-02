@@ -27,7 +27,6 @@ This task performs fine tuning on a pretrained model, FLAN-T5, to translate expe
 Medical imaging reports are written by radiologists for specialists, often containing complex terminology and syntax. This makes them difficult for patients to understand.  
 Using a sequence-to-sequence large language model (FLAN-T5), we fine-tune on paired radiology and layperson summaries to generate simplified, accessible versions.
 
-
 ## Dependencies
 To reproduce training environment, install the following packages.
 
@@ -41,14 +40,26 @@ pip install -q --no-cache-dir \
 pip install datasets evaluate rouge-score torch tensorboard
 
 ---
-## Full code process run through
+## Folder Structure
+1. modules.py: loads the flan-t5 model, tokenizer, seq2seq data collator, and is where main is located. Does not follow task sheet suggestion of having source code for compoenets of my model since Flan-T5 is a pre-trained model from Hugging Face, its architecture is already implemented and only needs to be loaded, not redefined.
+
+2. dataset.py: contians the data loader, preparation, and preprocessing functionality.
+
+3. train.py: contains the training, validating, testing (tested traning with a subset of validation data) and saving of the fine-tuned model. Training results displayed includes a training loss curve, validation metrics, and example generation of one sample run.
+
+4. predict.py: Tests the final fine tuned model on the whole validation dataset, with final outputs displaying example results and rouge scores.
+
+- BioLaySumm_FlanT5_Finetuning.ipynb: code used to run on google colab.
+
+
+## Implementation process run through
 
 ### 1. Data Loading and Preparation (dataset.py)
 The BioLaySumm dataset is imported from hugging face library (BioLaySumm Shared Task at ACL, 2025).
 The raw dataset comes in this structure:
 - train 150k rows
 - validation 10k rows
-- test 10.5k rows
+- test 10.5k rows (not used)
 Each with the fields: source, images_path, radiology_report, layman_report.
 
 Once the dataset is loaded, preparation is done to extract only specific data required for the purpose of the task.
@@ -60,39 +71,46 @@ A subset of each datast is also chosen through selecting a fixed range; this is 
 Shuffling with fixed seed is also set for reproducability and ensures the training data is randomized in a consistent manner across runs, preventing any bias from the original dataset order while maintaining deterministic reproducibility.
 
 ### 2. Data Formatting and Preprocessing (modules.py)
-Tokenizer is loaded in modules.py.
+This stage prepares the dataset for input into the Flan-T5 model. The tokenizer is first loaded in modules.py and is responsible for converting raw text into model-readable numerical format. Specifically, the tokenizer splits each text sequence into subword tokens and maps these tokens into token IDs, which correspond to entries in the model’s vocabulary.
 
-The prepared data is passed through a tokenizer, with 
-the context window for maximum input length set at 256 since radiology reports are longer, and maximmum target length at a shorter 128 since layman summaries are shorter.
-Padding is set to 
+Each radiology report is prefixed with an instruction prompt for instruction fine tuning—
+"Summarize this radiology report for a layperson: " —
+
+The function preprocess_dataset() applies tokenization separately to the training and validation subsets. For each sample, two main text fields are processed:
+
+- Input (radiology_report): Tokenized with a maximum input length of 256 tokens, reflecting the typically longer and more detailed nature of radiology reports.
+- Target (layman_report): Tokenized with a shorter maximum length of 128 tokens, as lay summaries are expected to be more concise.
+
+Padding is set to "longest", meaning all sequences in a batch are padded to the length of the longest example to ensure equal tensor dimensions for efficient batch processing. Truncation ensures any text longer than the maximum length is cut off rather than exceeding the model’s context window.
+
+After tokenization, three key components are returned for each example in the dataset:
+
 ```
 {
-  "input_ids": tensor([...]),
-  "attention_mask": tensor([...]),
-  "labels": tensor([...])
+  "input_ids": tensor([...]),        # Token IDs representing the input (radiology report)
+  "attention_mask": tensor([...]),   # Binary mask indicating which tokens are actual text (1) vs. padding (0)
+  "labels": tensor([...])            # Token IDs for the target summary, used as decoder labels during training
 }
 ```
 
-### 3. Collate and Batching (dataset.py)
-For encoder-decoder models like T5 or FLAN-T5, `DataCollatorForSeq2Seq` does a few special things automatically.
+The attention_mask guides the model to focus only on valid tokens during computation, ignoring padded positions. The labels correspond to the ground-truth lay summaries and are used by the loss function to compare predicted tokens with expected ones.
+
+Finally, the processed datasets are returned as tokenized_train and tokenized_val, each containing only the columns needed for training — input_ids, attention_mask, and labels. This ensures a clean, structured format ready for the model’s fine-tuning pipeline.
+
+(“Tokenizer,” 2018)
+
+### 3. Collate and Batching (modules.py)
+Instruction fine tuning data preparation:
+After tokenization, the dataset still consists of Python lists of token IDs with variable lengths. However, the model expects each batch to be a set of tensors with the same sequence length. To handle this automatically, we use the Hugging Face utility:
 ```
 data_collator = DataCollatorForSeq2Seq(tokenizer=tokenizer, model=model)
 ```
-- Dynamic padding per batch: Instead of padding everything to a fixed maximum length (wastes memory), it pads only up to the longest sequence in the batch.
- It pads both encoder inputs (radiology reports) and decoder targets (layperson summaries).
-- Shifts the decoder labels (important for seq2seq): In an encoder-decoder model, the decoder predicts the next token in the target sequence. To make that work correctly, the input to the decoder is the target sequence shifted right by one token. The label is the original sequence (unshifted). This ensures the model only sees previous tokens, not the current or future ones.
-This “shift right” behavior is like a teacher forcing setup, preventing the model from cheating.
-- It creates the proper attention masks
+This automatically pads all inputs and targets in each batch to the same length, generates attention masks so the model ignores padding, and replaces padded label positions with -100 so they do not affect the loss.
 
-It automatically generates: attention_mask for encoder inputs (which tokens are real vs. padding)
-decoder_attention_mask for targets
-These masks tell the model which tokens to attend to during forward passes.
-This all gets packaged into a single dictionary that can be passed directly into the model during training.
-
-
-Without a data collator, this would have to be manually done through manual padding of sequences for each branch, shifting the decoder labels, and writing the logic for attention mask. , So instead of you doing that manually, the collator handles it automatically.
+It also prepares the decoder inputs by shifting the target tokens one position to the right, enabling the model to learn to predict the next token in the sequence. This step is essential for sequence-to-sequence fine-tuning, allowing the decoder to generate fluent, coherent summaries token by token.
 
 ### 4. Create Data Loader
+In this project, the Seq2SeqTrainer automatically creates and manages the data loaders internally using the preprocessed datasets and DataCollatorForSeq2Seq. Therefore, no separate DataLoader initialization is required.
 
 ### 5. Initialize Model FLAN-T5-base (modules.py)
 
@@ -102,10 +120,9 @@ Without a data collator, this would have to be manually done through manual padd
 ### 7. Generate and Save Responses
 
 
-### 8. Model Evaidationn
+### 8. Model Evaluation
 
-This code runs after training to perform a quick qualitative evalidation on a validation sample. It does not update model weights, does not compute gradients, and does not affect training in any way. It simply takes one radiology report from the validation set, shows the true lay summary, and prints the summary generated by the trained model so you can visually inspect its performance.
-
+Tested on all 10k validation dataset
 
 ---
 ## Results
@@ -125,16 +142,6 @@ Table
 loss curve
 
 Validation metrics: {'validation_loss': 0.5616681575775146, 'validation_rouge1': 0.4005814744200473, 'validation_rouge2': 0.22337463515126288, 'validation_rougeL': 0.34938132175511655, 'validation_rougeLsum': 0.3699470848351884, 'validation_runtime': 7.187, 'validation_samples_per_second': 27.828, 'validation_steps_per_second': 0.974, 'epoch': 3.0}
-
---- Example Generation ---
-Report:
- The chest shows significant air trapping. Bilateral apical chronic changes are present. Dorsal kyphosis is noted. No evidence of pneumothorax. ...
-
-Ground Truth summary:
- The chest shows a large amount of trapped air. There are long-term changes at the top of both lungs. The upper back is curved outward. There is no sign of air in the space around the lungs. 
-
-Model summary:
- The chest shows significant air trapping. There are chronic changes in the apical apical changes. There is also a kyphosis in the lungs. There is no sign of pneumothorax.
 
 --- Example Generation ---
 Report:
@@ -263,25 +270,21 @@ Model summary:
 INPUT: The chest shows significant air trapping. Bilateral apical chronic changes are present. Dorsal kyphosis is noted. No evidence of pneumothorax. ...
 GROUND TRUTH: The chest shows a large amount of trapped air. There are long-term changes at the top of both lungs. The upper back is curved outward. There is no sign of air in the space around the lungs.
 MODEL OUTPUT: The chest shows significant air trapping. There are long-term changes in both lower parts of the lungs. There is a curvature of the spine in the upper back. There is no sign of air in the chest cavity.
-/n
 
 --- Example 2 ---
 INPUT: Central venous catheter traversing the left jugular vein with its tip in the superior vena cava. The remainder is unchanged. ...
 GROUND TRUTH: A central venous catheter is going through the left jugular vein and its tip is in the superior vena cava. Everything else is the same as before.
 MODEL OUTPUT: A central venous catheter is going through the left jugular vein and its tip is in the superior vena cava. Everything else looks the same.
-/n
 
 --- Example 3 ---
 INPUT: Chronic pulmonary changes ...
 GROUND TRUTH: Long-term changes in the lungs are seen.
 MODEL OUTPUT: Long-term changes in the lungs are seen.
-/n
 
 --- Example 4 ---
 INPUT: Radiological signs of air trapping, flattened diaphragm, and increased retrosternal space. Calcified pleural plaques at the level of the left diaphragmatic pleura. Loss of volume in the left lung with subpleural linear opacities. Findings are related ...
 GROUND TRUTH: The X-ray shows signs of trapped air, a flattened muscle under the lungs, and more space behind the breastbone. There are also hardened areas on the lung lining on the left side. The left lung has lost some volume and has some linear shadows near the outer lining. These findings are related to long-term inflammation caused by exposure to asbestos. Looking at the previous CT scan, there are no significant changes compared to the scanogram dated 3/4/2009.
 MODEL OUTPUT: The x-ray shows signs of air being trapped in the lungs, flattened diaphragm, and increased space behind the breastbone. There are calcified plaques at the level of the left diaphragm pleura. The left lung has less volume with hazy areas below the pleura. These findings are related to long-term inflammation due to asbestos exposure. Compared to the scan from 3/4/2009, there are no significant changes.
-/n
 
 --- Example 5 ---
 INPUT: Calcified granuloma in the right lung vertex. ...
@@ -395,7 +398,6 @@ Building an LLM
  - 
 
  Tokenization
- Split raw text into tokens and map these tokens into token IDs
 
  After pretraining, the model knows general language, but not how to follow human instructions. Instruction fine-tuning ttranins it on prias of instructions and desired replies so it learnss to respond in the way people expect
 
